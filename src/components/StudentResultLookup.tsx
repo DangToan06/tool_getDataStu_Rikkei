@@ -76,7 +76,7 @@ export default function StudentResultLookup(): JSX.Element {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data: StudentResult = await response.json();
+      const data = (await response.json()) as { resultData: StudentResult };
       setResult(data.resultData);
     } catch (err) {
       setError((err as Error).message || "Không thể kết nối đến API");
