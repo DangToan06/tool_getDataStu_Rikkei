@@ -10,24 +10,33 @@ import {
   Row,
   Col,
 } from "antd";
-import { SearchOutlined, CheckCircleOutlined } from "@ant-design/icons";
+import {
+  SearchOutlined,
+  CheckCircleOutlined,
+  LinkOutlined,
+} from "@ant-design/icons";
 
 const { Title, Text } = Typography;
 
 interface StudentResult {
-  studentId?: number;
-  studentName?: string;
   courseId?: number;
-  courseName?: string;
-  scores?: Array<{
-    id?: number;
-    name?: string;
-    score?: number;
-    weight?: number;
+  finalResult?: {
+    quizzi?: number;
+    project?: number;
+    interview_point?: number;
+    finalScore?: number;
+    [key: string]: unknown;
+  };
+  resultTest?: Array<{
+    link?: string | null;
+    point?: number;
+    testSchedule?: {
+      test?: {
+        testName?: string;
+        type?: string;
+      };
+    };
   }>;
-  averageScore?: number;
-  grade?: string;
-  status?: string;
   [key: string]: unknown;
 }
 
@@ -68,7 +77,7 @@ export default function StudentResultLookup(): JSX.Element {
       }
 
       const data: StudentResult = await response.json();
-      setResult(data);
+      setResult(data.resultData);
     } catch (err) {
       setError((err as Error).message || "Không thể kết nối đến API");
     } finally {
@@ -85,6 +94,7 @@ export default function StudentResultLookup(): JSX.Element {
       }}
     >
       <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+        {/* FORM TRA CỨU */}
         <Card
           style={{
             marginBottom: "24px",
@@ -125,8 +135,7 @@ export default function StudentResultLookup(): JSX.Element {
                     size="large"
                     value={courseId}
                     onChange={(e) => setCourseId(e.target.value)}
-                    placeholder="Nhập ID khóa học..."
-                    onPressEnter={handleSubmit}
+                    disabled
                   />
                 </Space>
               </Col>
@@ -146,6 +155,7 @@ export default function StudentResultLookup(): JSX.Element {
           </Space>
         </Card>
 
+        {/* HIỂN THỊ LỖI */}
         {error && (
           <Alert
             message="Lỗi"
@@ -158,12 +168,14 @@ export default function StudentResultLookup(): JSX.Element {
           />
         )}
 
+        {/* LOADING */}
         {loading && (
           <Card style={{ textAlign: "center", borderRadius: "12px" }}>
             <Spin size="large" tip="Đang tải dữ liệu..." />
           </Card>
         )}
 
+        {/* KẾT QUẢ */}
         {result && !loading && (
           <Card
             title={
@@ -181,27 +193,109 @@ export default function StudentResultLookup(): JSX.Element {
               boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
             }}
           >
+            {/* Bảng điểm */}
             <div
               style={{
-                background: "#f5f5f5",
-                padding: "16px",
-                borderRadius: "8px",
-                overflow: "auto",
-                maxHeight: "600px",
+                background: "#f8fafc",
+                padding: "20px",
+                borderRadius: "12px",
               }}
             >
-              <pre
-                style={{
-                  margin: 0,
-                  fontFamily: "monospace",
-                  fontSize: "13px",
-                  lineHeight: "1.6",
-                  whiteSpace: "pre-wrap",
-                  wordWrap: "break-word",
-                }}
-              >
-                {JSON.stringify(result, null, 2)}
-              </pre>
+              {result.finalResult ? (
+                <>
+                  <Title
+                    level={4}
+                    style={{ marginBottom: "16px", textAlign: "center" }}
+                  >
+                    🎓 Kết quả khóa học
+                  </Title>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "16px",
+                      maxWidth: "500px",
+                      margin: "0 auto",
+                    }}
+                  >
+                    {[
+                      { label: "Quizzi", value: result.finalResult.quizzi },
+                      { label: "Project", value: result.finalResult.project },
+                      {
+                        label: "Interview",
+                        value: result.finalResult.interview_point,
+                      },
+                      {
+                        label: "Final Score",
+                        value: result.finalResult.finalScore,
+                      },
+                    ].map((item) => (
+                      <Card
+                        key={item.label}
+                        style={{
+                          textAlign: "center",
+                          borderRadius: "10px",
+                          background: "#fff",
+                          boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+                        }}
+                      >
+                        <Text
+                          type="secondary"
+                          style={{ display: "block", fontSize: "14px" }}
+                        >
+                          {item.label}
+                        </Text>
+                        <Text
+                          strong
+                          style={{
+                            fontSize: "20px",
+                            color:
+                              (item.value ?? 0) >= 90
+                                ? "#16a34a"
+                                : (item.value ?? 0) >= 70
+                                ? "#eab308"
+                                : "#dc2626",
+                          }}
+                        >
+                          {item.value ?? "—"}
+                        </Text>
+                      </Card>
+                    ))}
+                  </div>
+
+                  {/* Link Project nếu có */}
+                  {result.resultTest?.some((t) => t.link) && (
+                    <div style={{ marginTop: "24px", textAlign: "center" }}>
+                      <Text strong style={{ fontSize: "16px" }}>
+                        🔗 Link Project:
+                      </Text>
+                      <div style={{ marginTop: "8px" }}>
+                        {result.resultTest
+                          ?.filter((t) => t.link)
+                          .map((t, idx) => (
+                            <div key={idx}>
+                              <a
+                                href={t.link!}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  color: "#2563eb",
+                                  fontWeight: 500,
+                                  textDecoration: "none",
+                                }}
+                              >
+                                <LinkOutlined /> {t.link}
+                              </a>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <Text type="secondary">Không có dữ liệu kết quả</Text>
+              )}
             </div>
           </Card>
         )}
